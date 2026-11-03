@@ -28,7 +28,9 @@
     slab: "#B8B1A5",
     slabDk: "#8E877B",
     grass: "#74C043",
-    grassDk: "#4C9530"
+    grassDk: "#4C9530",
+    builtBrick: "#94604F",
+    builtEdge: "#5C3529"
   };
 
   /* ---------- Save ---------- */
@@ -744,7 +746,7 @@
     cv.height = Math.round(H * dpr);
     const cols = engine.cols;
     const rows = engine.rows;
-    const padX = 26;
+    const padX = 24;
     const ground = 30;
     const top = 36;
     let m = 3;
@@ -755,13 +757,20 @@
       ch = (maxH - (rows - 1) * m) / rows;
       cw = ch / 0.64;
     }
-    ch = Math.min(ch, 44);
+    ch = Math.min(ch, 48);
     cw = Math.min(cw, ch / 0.64);
     const wallW = cols * cw + (cols - 1) * m;
     const wallH = rows * ch + (rows - 1) * m;
     const ox = (W - wallW) / 2;
-    const oy = H - ground - 14 - wallH;
-    layout = { W: W, H: H, dpr: dpr, cw: cw, ch: ch, m: m, ox: ox, oy: oy, wallW: wallW, wallH: wallH, ground: ground };
+    // Finished brickwork under the courses being laid, so the screen shows a wall going up.
+    // Doors start at the ground, so a level with an opening in its first course gets none.
+    let groundOpening = false;
+    for (let c = 0; c < cols; c += 1) if (engine.mask[0][c] === 0) groundOpening = true;
+    const spare = maxH - wallH;
+    const baseRows = groundOpening ? 0 : Math.max(0, Math.min(5, Math.floor((spare * 0.6) / (ch + m))));
+    const baseH = baseRows * (ch + m);
+    const oy = H - ground - 14 - baseH - wallH;
+    layout = { W: W, H: H, dpr: dpr, cw: cw, ch: ch, m: m, ox: ox, oy: oy, wallW: wallW, wallH: wallH, ground: ground, baseRows: baseRows, baseH: baseH };
   }
 
   function cellXY(r, c) {
@@ -815,8 +824,32 @@
       ctx.stroke();
     });
 
+    // Courses already built below the work
+    if (L.baseRows) {
+      const by = L.oy + L.wallH + L.m;
+      roundRect(ctx, L.ox - 4, by - 1, L.wallW + 8, L.baseH + 5, 4);
+      ctx.fillStyle = "#CDBFA8";
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = C.ink;
+      ctx.stroke();
+      for (let i = 0; i < L.baseRows; i += 1) {
+        const y = by + 1 + i * (L.ch + L.m);
+        const odd = (i % 2) === 0;
+        let c = 0;
+        while (c < engine.cols) {
+          let w = 2;
+          if (odd && c === 0) w = 1;
+          if (c + w > engine.cols) w = engine.cols - c;
+          const x = L.ox + c * (L.cw + L.m);
+          paintBrick(ctx, x, y, w * L.cw + (w - 1) * L.m, L.ch, C.builtBrick, C.builtEdge, i * 7 + c);
+          c += w;
+        }
+      }
+    }
+
     // Footing
-    const fy = L.oy + L.wallH + 4;
+    const fy = L.oy + L.wallH + L.baseH + 4;
     roundRect(ctx, L.ox - 12, fy, L.wallW + 24, 12, 3);
     ctx.fillStyle = C.slab;
     ctx.fill();
@@ -840,9 +873,15 @@
           ctx.fillStyle = C.hole;
           ctx.fillRect(p.x - L.m / 2, p.y - L.m / 2, L.cw + L.m, L.ch + L.m);
         } else if (m === 1 && engine.fill[r][c] === 0) {
+          // An empty seat: recessed and outlined, so the shape of the planned wall is clear.
           roundRect(ctx, p.x + 1, p.y + 1, L.cw - 2, L.ch - 2, 3);
-          ctx.fillStyle = "rgba(185, 170, 146, 0.32)";
+          ctx.fillStyle = "rgba(120, 100, 78, 0.2)";
           ctx.fill();
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = "rgba(110, 88, 64, 0.55)";
+          ctx.stroke();
+          ctx.setLineDash([]);
         }
       }
     }
@@ -1144,7 +1183,8 @@
 
   function moveDrag(x, y) {
     const pr = phone.getBoundingClientRect();
-    const lift = drag.h / 2 + 44;
+    // Hold the brick well above the finger so the thumb never hides the wall.
+    const lift = drag.h / 2 + 64;
     const cxp = x - pr.left;
     const cyp = y - pr.top - lift;
     const el = $("drag");

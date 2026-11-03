@@ -192,6 +192,13 @@ iPhone specifics
 - Audio unlocks inside every gesture until it is running, and the context is rebuilt if a Home Screen app loses it.
 - `navigator.audioSession` lets sound play with the silent switch on. Settings has a toggle for this on iPhone.
 
+### Sprint 9. Make the wall readable
+Feedback from Donnie on his iPhone: "I can't see the wall while playing." Checked in real WebKit at iPhone sizes: it rendered, but read as a thin pale strip at the bottom of a big sky, with 15 to 18 px bricks on wide walls, and the thumb covered it while dragging.
+- [x] Finished courses of older, duller brick are drawn under the work area, up from the footing, so the screen shows a wall going up. Levels with a door in the first course start at the ground instead.
+- [x] Empty seats are recessed and outlined, so the shape of the planned wall is clear before any brick is laid.
+- [x] The dragged brick floats 64 px above the finger instead of 44, so the thumb stays below the wall.
+- [x] Bricks can grow to 48 px tall and the side margins are a little tighter.
+
 ### Next ideas
 - Daily wall with a shared seed.
 - Real brick and trowel sound recordings.
