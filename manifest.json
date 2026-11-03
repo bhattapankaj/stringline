@@ -1,0 +1,19 @@
+{
+  "name": "Stringline",
+  "short_name": "Stringline",
+  "description": "A bricklaying puzzle. Lay every course in running bond and build the wall.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#56B6EE",
+  "theme_color": "#56B6EE",
+  "icons": [
+    {
+      "src": "./assets/img/icon.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Stringline">
+  <meta name="theme-color" content="#56B6EE">
+  <meta name="description" content="A bricklaying puzzle. Lay every course in running bond and build the wall.">
+  <title>Stringline</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./assets/img/icon.jpg">
+  <link rel="apple-touch-icon" href="./assets/img/icon.jpg">
+  <link rel="preload" href="./assets/fonts/LilitaOne.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="./assets/fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="./css/app.css?v=21">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8Zm8.2 4.7-1.7 1 .1 2-2 1.2-1.7-1-1.8 1-.4 2h-2.4l-.4-2-1.8-1-1.7 1-2-1.2.1-2-1.7-1v-2.4l1.7-1-.1-2 2-1.2 1.7 1 1.8-1 .4-2h2.4l.4 2 1.8 1 1.7-1 2 1.2-.1 2 1.7 1Z" fill="currentColor"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><path d="M9 9.2a3 3 0 1 1 4.6 2.6c-1 .6-1.6 1.2-1.6 2.4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="12" cy="18.4" r="1.8" fill="currentColor"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 5 4 9l4 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9h9a5 5 0 0 1 0 10h-4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
+      <symbol id="i-restart" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.2-5.1" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M18 3v5h-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24"><path d="M4 6.5 9 4l6 2.5L20 4v13.5L15 20l-6-2.5L4 20Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M9 4v13.5M15 6.5V20" stroke="currentColor" stroke-width="2.6"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z" fill="currentColor"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2.6 2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 16.8l-5.8 3.3 1.4-6.4-4.9-4.4 6.5-.7Z"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2.8"/></symbol>
+      <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3Z" fill="currentColor"/><rect x="9.5" y="17.5" width="5" height="3.2" rx="1.2" fill="currentColor"/></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <div id="phone">
+
+    <!-- HOME -->
+    <section id="view-home" class="view on" data-view="home">
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <button type="button" class="home-donnie" id="home-donnie" aria-label="Donnie, the mason">
+        <div class="bobble" id="home-bob"><img class="bob-body" src="./assets/img/donnie-body.png" alt="" draggable="false"><img class="bob-head" src="./assets/img/donnie-head.png" alt="" draggable="false"></div>
+      </button>
+      <header class="home-top">
+        <button type="button" class="round-btn" id="btn-how" aria-label="How to play"><svg><use href="#i-help"/></svg></button>
+        <button type="button" class="round-btn" id="btn-settings" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
+      </header>
+      <div class="logo">
+        <h1 class="logo-word">Stringline</h1>
+        <p class="logo-sub">A bricklaying puzzle</p>
+      </div>
+      <div class="home-bottom">
+        <button type="button" class="btn btn-go btn-xl" id="btn-play">
+          <span class="btn-main">Play</span>
+          <span class="btn-sub" id="play-level">Level 1</span>
+        </button>
+        <div class="progress" id="home-progress">
+          <div class="progress-label">
+            <span id="home-chapter">The Lead</span>
+            <span id="home-count">0 of 24 walls</span>
+          </div>
+          <div class="progress-track"><i id="home-bar"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section id="view-map" class="view" data-view="map">
+      <header class="bar">
+        <button type="button" class="round-btn" data-back="home" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+        <h2 class="bar-title">Job Map</h2>
+        <div class="star-pill"><svg><use href="#i-star"/></svg><span id="map-stars">0</span></div>
+      </header>
+      <div class="map-scroll" id="map-scroll">
+        <div class="map-canvas" id="map-canvas"></div>
+      </div>
+    </section>
+
+    <!-- PLAY -->
+    <section id="view-play" class="view" data-view="play">
+      <header class="bar play-bar">
+        <div class="bar-side">
+          <button type="button" class="round-btn" id="btn-map-back" aria-label="Back to map"><svg><use href="#i-back"/></svg></button>
+        </div>
+        <div class="play-title">
+          <h2 class="bar-title" id="play-name">First Course</h2>
+          <div class="play-meta">
+            <span id="play-level-label">Level 1</span>
+            <span class="meter" id="star-meter" aria-label="Stars you will earn"></span>
+          </div>
+        </div>
+        <div class="bar-side right">
+          <button type="button" class="round-btn small" id="btn-undo" aria-label="Undo"><svg><use href="#i-undo"/></svg></button>
+          <button type="button" class="round-btn small" id="btn-retry" aria-label="Restart wall"><svg><use href="#i-restart"/></svg></button>
+        </div>
+      </header>
+
+      <div class="coach">
+        <div class="coach-donnie" role="img" aria-label="Donnie, the mason">
+          <div class="bobble" id="coach-bob"><img class="bob-body" src="./assets/img/donnie-body.png" alt="" draggable="false"><img class="bob-head" src="./assets/img/donnie-head.png" alt="" draggable="false"></div>
+        </div>
+        <div class="bubble">
+          <p id="tip">Keep the line.</p>
+        </div>
+        <button type="button" class="btn btn-gold hint-btn" id="btn-hint">
+          <svg><use href="#i-bulb"/></svg><span>Hint</span>
+        </button>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="stage-pill"><i></i><span id="bricks-left">0 bricks left</span></div>
+        <canvas id="wall"></canvas>
+      </div>
+
+      <div class="rack" id="rack">
+        <div class="slot hold" id="slot-hold" data-from="hold">
+          <span class="slot-label">Hold</span>
+          <div class="slot-body" id="hold-body"></div>
+        </div>
+        <div class="slot next" id="slot-next" data-from="queue">
+          <span class="slot-label">Next</span>
+          <div class="slot-body" id="next-body"></div>
+        </div>
+        <div class="slot later">
+          <span class="slot-label" id="later-label">Then</span>
+          <div class="slot-body later-body" id="later-body"></div>
+        </div>
+      </div>
+
+      <div class="sheet" id="sheet" hidden>
+        <div class="panel">
+          <p class="ribbon" id="sheet-ribbon">Wall done</p>
+          <div class="big-stars" id="sheet-stars"></div>
+          <h3 class="panel-title" id="sheet-title">On the line</h3>
+          <p class="panel-text" id="sheet-text">No undos. No hints.</p>
+          <button type="button" class="btn btn-go btn-lg" id="sheet-primary">Next level</button>
+          <div class="panel-row">
+            <button type="button" class="btn btn-steel btn-md" id="sheet-retry"><svg><use href="#i-restart"/></svg><span>Replay</span></button>
+            <button type="button" class="btn btn-steel btn-md" id="sheet-map"><svg><use href="#i-map"/></svg><span>Map</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW TO PLAY -->
+    <section id="view-how" class="view" data-view="how">
+      <header class="bar">
+        <button type="button" class="round-btn" data-back="home" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+        <h2 class="bar-title">How to Play</h2>
+        <span class="bar-gap"></span>
+      </header>
+      <div class="page">
+        <section class="lesson">
+          <svg class="lesson-art" viewBox="0 0 120 56" aria-hidden="true">
+            <rect x="4" y="40" width="112" height="12" rx="2" class="art-ground"/>
+            <rect x="8" y="26" width="34" height="12" rx="2" class="art-brick"/>
+            <rect x="44" y="26" width="34" height="12" rx="2" class="art-brick"/>
+            <rect x="80" y="26" width="32" height="12" rx="2" class="art-seat"/>
+            <rect x="74" y="4" width="34" height="12" rx="2" class="art-brick"/>
+            <path d="M92 18v4" class="art-arrow"/>
+          </svg>
+          <div>
+            <h3>Drag bricks onto the wall</h3>
+            <p>Pull the Next brick from the rack. It snaps into the nearest seat that works. You can also tap a seat.</p>
+          </div>
+        </section>
+        <section class="lesson">
+          <svg class="lesson-art" viewBox="0 0 120 56" aria-hidden="true">
+            <rect x="8" y="30" width="34" height="12" rx="2" class="art-brick"/>
+            <rect x="44" y="30" width="34" height="12" rx="2" class="art-brick"/>
+            <rect x="80" y="30" width="32" height="12" rx="2" class="art-brick"/>
+            <rect x="8" y="16" width="16" height="12" rx="2" class="art-brick"/>
+            <rect x="26" y="16" width="34" height="12" rx="2" class="art-brick"/>
+            <rect x="62" y="16" width="34" height="12" rx="2" class="art-brick"/>
+            <rect x="98" y="16" width="14" height="12" rx="2" class="art-brick"/>
+            <path d="M43 14v30M79 14v30" class="art-ok"/>
+          </svg>
+          <div>
+            <h3>Keep joints apart</h3>
+            <p>A joint is the gap between two bricks. It must never sit right on a joint in the course below. Half bricks at the ends make this work.</p>
+          </div>
+        </section>
+        <section class="lesson">
+          <svg class="lesson-art" viewBox="0 0 120 56" aria-hidden="true">
+            <rect x="8" y="38" width="104" height="12" rx="2" class="art-brick"/>
+            <rect x="8" y="24" width="30" height="12" rx="2" class="art-brick"/>
+            <rect x="40" y="24" width="40" height="12" rx="2" class="art-hole"/>
+            <rect x="82" y="24" width="30" height="12" rx="2" class="art-brick"/>
+            <rect x="24" y="10" width="72" height="12" rx="2" class="art-gold"/>
+          </svg>
+          <div>
+            <h3>Leave the openings</h3>
+            <p>Dark gaps are windows and doors. Build both sides first, then cross the top with a brick long enough to rest on each side.</p>
+          </div>
+        </section>
+        <section class="lesson">
+          <svg class="lesson-art" viewBox="0 0 120 56" aria-hidden="true">
+            <rect x="8" y="12" width="40" height="32" rx="6" class="art-slot"/>
+            <rect x="15" y="25" width="26" height="10" rx="2" class="art-brick"/>
+            <rect x="56" y="12" width="56" height="32" rx="6" class="art-slot gold"/>
+            <rect x="66" y="25" width="36" height="10" rx="2" class="art-brick"/>
+          </svg>
+          <div>
+            <h3>Park one brick in Hold</h3>
+            <p>If a brick shows up too early, drag it to Hold and use it later. Hold keeps one brick.</p>
+          </div>
+        </section>
+        <section class="lesson stars-lesson">
+          <div class="lesson-stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
+          <div>
+            <h3>Earn three stars</h3>
+            <p>Finish with no undos and no hints. One or two slips earns two stars. Any finished wall earns one.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view" data-view="settings">
+      <header class="bar">
+        <button type="button" class="round-btn" data-back="home" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+        <h2 class="bar-title">Settings</h2>
+        <span class="bar-gap"></span>
+      </header>
+      <div class="page fit">
+        <div class="list">
+          <label class="row">
+            <span>Sound</span>
+            <span class="toggle"><input type="checkbox" id="set-sfx" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
+          </label>
+          <label class="row">
+            <span>Vibration</span>
+            <span class="toggle"><input type="checkbox" id="set-haptics" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
+          </label>
+        </div>
+        <p class="fine">Progress is saved on this device. To play full screen on iPhone, tap Share, then Add to Home Screen.</p>
+        <button type="button" class="btn btn-plain btn-md" id="btn-reset">Reset progress</button>
+      </div>
+    </section>
+
+    <div id="drag" aria-hidden="true"></div>
+    <div id="toast" aria-live="polite"></div>
+  </div>
+
+  <script src="./js/levels.js?v=21"></script>
+  <script src="./js/audio.js?v=21"></script>
+  <script src="./js/engine.js?v=21"></script>
+  <script src="./js/app.js?v=21"></script>
+</body>
+</html>
