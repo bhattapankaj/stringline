@@ -1,4 +1,4 @@
-const CACHE = "stringline-v21";
+const CACHE = "stringline-v22";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,7 +10,11 @@ const ASSETS = [
   "./manifest.json",
   "./assets/img/donnie-head.png",
   "./assets/img/donnie-body.png",
-  "./assets/img/icon.jpg",
+  "./assets/img/icon-192.png",
+  "./assets/img/icon-512.png",
+  "./assets/img/apple-touch-icon.png",
+  "./assets/img/favicon.svg",
+  "./assets/img/favicon-32.png",
   "./assets/fonts/LilitaOne.ttf",
   "./assets/fonts/Nunito.ttf"
 ];
