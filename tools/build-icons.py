@@ -2,9 +2,11 @@
 Icon builder. Run: python3 tools/build-icons.py [concept]
 Draws the Stringline mark at 4x and downsamples for clean edges.
 Outputs App Store, PWA, Apple touch and favicon sizes into assets/img.
+App icon: Donnie close-up ("face", default). Favicon: the bond and line mark, which
+stays readable at 16 px. Other concepts: a, b, c (symbol only).
 """
 import sys
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 K = 4
 S = 1024 * K
@@ -129,6 +131,39 @@ def concept_c(size, transparent=False):
     return img
 
 
+SKY_TOP = (92, 186, 240)
+SKY_BOT = (54, 140, 214)
+
+
+def concept_face(size, transparent=False):
+    """App icon: Donnie close-up over one brick course with the line under his chin.
+    Faces win attention on a store page; the brick course and line tie it to the favicon."""
+    s = size / 1024
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0)) if transparent else background(size, SKY_TOP, SKY_BOT).convert("RGBA")
+    head = Image.open("assets/img/donnie-head.png").convert("RGBA")
+    head = head.crop(head.getbbox())
+    scale = 2.95 * s
+    head = head.resize((int(head.width * scale), int(head.height * scale)), Image.LANCZOS)
+    hx = int(size / 2 - (204 - 62) * scale)
+    wall_top = int(800 * s)
+    hy = wall_top - int(318 * scale)
+    shadow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    shadow.paste((18, 24, 42, 90), (hx, hy + int(14 * s)), head)
+    img = Image.alpha_composite(img, shadow.filter(ImageFilter.GaussianBlur(max(1, int(10 * s)))))
+    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    layer.paste(head, (hx, hy), head)
+    img = Image.alpha_composite(img, layer)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, wall_top, size, size], fill=NAVY_BOT + (255,))
+    G, L, H = 20 * s, 300 * s, 150 * s
+    x = -L / 2
+    while x < size:
+        brick(d, int(x), int(wall_top + G), int(x + L), int(wall_top + G + H), s * 1.3)
+        x += L + G
+    line(d, int(-40 * s), int(size + 40 * s), int(wall_top - 4 * s), s * 1.3, blocks=False)
+    return img if transparent else img.convert("RGB")
+
+
 def favicon(size):
     """The same mark cut down for 16 to 48 px: two courses in bond, top half laid, the line."""
     k = 8
@@ -184,7 +219,7 @@ if __name__ == "__main__":
         sheet(concept_b, sys.argv[2] + "/concept-b.png")
         sheet(concept_c, sys.argv[2] + "/concept-c.png")
         sys.exit()
-    make = {"a": concept_a, "b": concept_b, "c": concept_c}[sys.argv[1] if len(sys.argv) > 1 else "c"]
+    make = {"a": concept_a, "b": concept_b, "c": concept_c, "face": concept_face}[sys.argv[1] if len(sys.argv) > 1 else "face"]
     big = make(S).resize((1024, 1024), Image.LANCZOS)
     big.save("assets/img/icon-1024.png", optimize=True)
     for size, name in [(512, "icon-512.png"), (192, "icon-192.png"), (180, "apple-touch-icon.png")]:
@@ -192,7 +227,8 @@ if __name__ == "__main__":
     # Layers for Xcode Icon Composer (iOS 26 light, dark and tinted icons).
     import os
     os.makedirs("assets/icon-layers", exist_ok=True)
-    background(1024).save("assets/icon-layers/background.png", optimize=True)
+    bg_colors = (SKY_TOP, SKY_BOT) if make is concept_face else (NAVY_TOP, NAVY_BOT)
+    background(1024, *bg_colors).save("assets/icon-layers/background.png", optimize=True)
     make(S, transparent=True).resize((1024, 1024), Image.LANCZOS).save("assets/icon-layers/foreground.png", optimize=True)
     favicon(32).save("assets/img/favicon-32.png", optimize=True)
     favicon(48).save("assets/img/favicon-48.png", optimize=True)
