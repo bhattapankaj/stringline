@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stringline icon</title>
+<style>
+  body { margin: 0; background: #ddd; font: 14px sans-serif; }
+  canvas { display: block; }
+  .bar { padding: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<!--
+  Draws the app icon with the same brick, wall, post and line painting the game uses (js/app.js),
+  so the icon looks exactly like the game. Open in a browser and use the buttons to save PNGs.
+  ?mode=app (default) full icon, ?mode=bg background layer, ?mode=fg foreground layer, ?mode=fav favicon
+  ?size=1024 output size
+-->
+<canvas id="c"></canvas>
+<div class="bar" id="bar"></div>
+<script>
+(function () {
+  const q = new URLSearchParams(location.search);
+  const mode = q.get("mode") || "app";
+  const size = +(q.get("size") || 1024);
+  if (mode === "fg") document.body.style.background = "transparent";
+  const cv = document.getElementById("c");
+  cv.width = size;
+  cv.height = size;
+  const ctx = cv.getContext("2d");
+  const k = size / 1024;
+  ctx.scale(k, k);
+
+  // Same palette as the game.
+  const C = {
+    ink: "#1F2A44", brick: "#C4502F", brickDk: "#86331F", mortar: "#E2D8C6",
+    line: "#FFC83D", lineDk: "#C98A0B", go: "#5BC236", slab: "#B8B1A5",
+    grass: "#74C043", grassDk: "#4C9530", hill: "#9ED36F", skyHi: "#56B6EE", skyLo: "#BFE7FB", post: "#8C6A45"
+  };
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // Brick painter from js/app.js, with weights scaled for icon size.
+  function paintBrick(x, y, w, h, seed) {
+    const r = Math.min(16, h * 0.2);
+    roundRect(x, y, w, h, r);
+    ctx.fillStyle = C.brick;
+    ctx.fill();
+    const band = h * 0.17;
+    ctx.save();
+    roundRect(x, y, w, h, r);
+    ctx.clip();
+    ctx.fillStyle = "rgba(255, 214, 186, 0.36)";
+    ctx.fillRect(x, y, w, band);
+    ctx.fillStyle = "rgba(70, 20, 8, 0.26)";
+    ctx.fillRect(x, y + h - band, w, band);
+    ctx.fillStyle = "rgba(70, 20, 8, 0.2)";
+    const dots = Math.max(2, Math.round(w / 40));
+    for (let i = 0; i < dots; i += 1) {
+      const dx = x + 14 + ((seed * 37 + i * 53) % Math.max(4, w - 28));
+      const dy = y + band + 6 + ((seed * 17 + i * 29) % Math.max(2, h - band * 2 - 14));
+      ctx.fillRect(dx, dy, 6, 6);
+    }
+    ctx.restore();
+    roundRect(x + 3, y + 3, w - 6, h - 6, r - 2);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = C.brickDk;
+    ctx.stroke();
+  }
+
+  function cloud(x, y, s) {
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.arc(x + 20 * s, y - 9 * s, 20 * s, 0, Math.PI * 2);
+    ctx.arc(x + 44 * s, y - 2 * s, 15 * s, 0, Math.PI * 2);
+    ctx.arc(x + 24 * s, y + 6 * s, 15 * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawBackground() {
+    const g = ctx.createLinearGradient(0, 0, 0, 1024);
+    g.addColorStop(0, C.skyHi);
+    g.addColorStop(0.78, C.skyLo);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 1024, 1024);
+    cloud(150, 190, 3.1);
+    cloud(700, 120, 2.0);
+    ctx.fillStyle = C.hill;
+    ctx.beginPath();
+    ctx.moveTo(0, 800);
+    ctx.quadraticCurveTo(300, 690, 600, 790);
+    ctx.quadraticCurveTo(820, 850, 1024, 760);
+    ctx.lineTo(1024, 1024);
+    ctx.lineTo(0, 1024);
+    ctx.fill();
+    ctx.fillStyle = C.grass;
+    ctx.fillRect(0, 862, 1024, 162);
+    ctx.fillStyle = C.grassDk;
+    ctx.fillRect(0, 862, 1024, 10);
+  }
+
+  // Wall in running bond: 6 half-brick units wide, 3 courses. The last seat is open.
+  const U = 6;
+  const M = 14;
+  const OX = 150;
+  const WALL_W = 724;
+  const CW = (WALL_W - M * (U - 1)) / U;
+  const CH = 112;
+  const BASE = 846;
+  function cell(r, c) {
+    return { x: OX + c * (CW + M), y: BASE - (r + 1) * CH - r * M };
+  }
+  function brickAt(r, c, w, seed) {
+    const p = cell(r, c);
+    paintBrick(p.x, p.y, w * CW + (w - 1) * M, CH, seed);
+  }
+
+  function drawForeground() {
+    const topY = cell(2, 0).y;
+    // Posts that hold the line
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = C.ink;
+    ctx.fillStyle = C.post;
+    [OX - 62, OX + WALL_W + 34].forEach(function (px) {
+      roundRect(px, topY - 120, 28, BASE - topY + 160, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    // Footing
+    roundRect(OX - 34, BASE + 12, WALL_W + 68, 36, 8);
+    ctx.fillStyle = C.slab;
+    ctx.fill();
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = C.ink;
+    ctx.stroke();
+    // Mortar bed
+    roundRect(OX - 14, topY - 14, WALL_W + 28, BASE - topY + 28, 18);
+    ctx.fillStyle = C.mortar;
+    ctx.fill();
+    ctx.lineWidth = 8;
+    ctx.stroke();
+    // Courses
+    brickAt(0, 0, 2, 1); brickAt(0, 2, 2, 2); brickAt(0, 4, 2, 3);
+    brickAt(1, 0, 1, 4); brickAt(1, 1, 2, 5); brickAt(1, 3, 2, 6); brickAt(1, 5, 1, 7);
+    brickAt(2, 0, 2, 8); brickAt(2, 2, 2, 9);
+    // The open seat, outlined the way the game shows a valid seat while dragging
+    const seat = cell(2, 4);
+    const sw = 2 * CW + M;
+    roundRect(seat.x + 4, seat.y + 4, sw - 8, CH - 8, 12);
+    ctx.fillStyle = "rgba(255, 200, 61, 0.35)";
+    ctx.fill();
+    ctx.setLineDash([22, 14]);
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = C.lineDk;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // The stringline, pulled tight across the top of the course being laid
+    const ly = topY - 22;
+    const x0 = OX - 48;
+    const x1 = OX + WALL_W + 48;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 20;
+    ctx.beginPath(); ctx.moveTo(x0, ly); ctx.lineTo(x1, ly); ctx.stroke();
+    ctx.strokeStyle = C.line;
+    ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.moveTo(x0, ly); ctx.lineTo(x1, ly); ctx.stroke();
+    [x0 - 24, x1 - 24].forEach(function (bx) {
+      roundRect(bx, ly - 26, 48, 52, 10);
+      ctx.fillStyle = C.line;
+      ctx.fill();
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = C.ink;
+      ctx.stroke();
+    });
+    // The brick coming down into the seat
+    const fx = seat.x;
+    const fy = seat.y - 190;
+    ctx.save();
+    ctx.translate(fx + sw / 2, fy + CH / 2);
+    ctx.rotate(-0.09);
+    ctx.fillStyle = "rgba(31, 42, 68, 0.22)";
+    roundRect(-sw / 2 + 10, -CH / 2 + 16, sw, CH, 16);
+    ctx.fill();
+    paintBrick(-sw / 2, -CH / 2, sw, CH, 11);
+    roundRect(-sw / 2 - 8, -CH / 2 - 8, sw + 16, CH + 16, 20);
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = C.go;
+    ctx.stroke();
+    ctx.restore();
+    // Motion marks under the falling brick
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 9;
+    [-60, 0, 60].forEach(function (dx) {
+      const mx = fx + sw / 2 + dx;
+      ctx.beginPath(); ctx.moveTo(mx, fy + CH + 26); ctx.lineTo(mx, fy + CH + 58); ctx.stroke();
+    });
+  }
+
+  // Favicon: same scene reduced to what reads at 16 px.
+  function drawFavicon() {
+    const g = ctx.createLinearGradient(0, 0, 0, 1024);
+    g.addColorStop(0, C.skyHi);
+    g.addColorStop(1, "#8FD0F4");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 1024, 1024);
+    ctx.fillStyle = C.grass;
+    ctx.fillRect(0, 860, 1024, 164);
+    function b(x, y, w, h) {
+      roundRect(x, y, w, h, 40);
+      ctx.fillStyle = C.brick;
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 214, 186, 0.45)";
+      ctx.fillRect(x + 30, y + 26, w - 60, 40);
+      roundRect(x + 10, y + 10, w - 20, h - 20, 32);
+      ctx.lineWidth = 20;
+      ctx.strokeStyle = C.brickDk;
+      ctx.stroke();
+    }
+    b(80, 560, 410, 260);
+    b(534, 560, 410, 260);
+    b(80, 260, 190, 260);
+    b(314, 260, 410, 260);
+    b(768, 260, 176, 260);
+    ctx.fillStyle = C.ink;
+    ctx.fillRect(0, 150, 1024, 80);
+    ctx.fillStyle = C.line;
+    ctx.fillRect(0, 166, 1024, 48);
+  }
+
+  if (mode === "bg") drawBackground();
+  else if (mode === "fg") drawForeground();
+  else if (mode === "fav") drawFavicon();
+  else { drawBackground(); drawForeground(); }
+  document.title = "ready";
+
+  const bar = document.getElementById("bar");
+  [1024, 512, 192, 180].forEach(function (s) {
+    const a = document.createElement("a");
+    a.textContent = "Save " + s;
+    a.href = "?mode=" + mode + "&size=" + s;
+    bar.appendChild(a);
+  });
+  const dl = document.createElement("button");
+  dl.textContent = "Download this PNG";
+  dl.onclick = function () {
+    const a = document.createElement("a");
+    a.download = "stringline-" + mode + "-" + size + ".png";
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  };
+  bar.appendChild(dl);
+})();
+</script>
+</body>
+</html>

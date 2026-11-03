@@ -156,11 +156,12 @@ Bad: "Great job! Let's keep the momentum going and unlock your potential!"
 - [x] Settings toggles rebuilt from real elements (track + knob) instead of a pseudo-element on the checkbox, so the knob sits centered in every browser.
 
 ### Sprint 7. App icon
-- [x] Compared a close-up Donnie icon against a symbol (running bond wall with the line) at 300, 120, 60, 40 and 16 px and in iOS tinted mode.
-- [x] **App icon: Donnie close-up** over one brick course with the yellow line under his chin. At store and home screen sizes the face is the strongest attention grabber, and character faces tend to lift game installs ([Appalize](https://www.appalize.com/blog/creative-optimization/app-icon-ab-testing-data-driven-icon-design)). It stays readable at 40 px and in tinted mode.
-- [x] **Favicon: the bond and line mark.** At 16 px a face turns into a blur, while the bricks and gold line still read. Puzzle icons that show the mechanic do well ([Supersonic](https://supersonic.com/learn/blog/5-design-tips-for-hyper-casual-icons-to-improve-your-app-store-cvr/)).
-- The two share the brick course and the gold line, so they read as one brand.
-- [x] `tools/build-icons.py` draws everything: 1024 App Store master (opaque, square corners, Apple adds the mask), PWA 192 and 512, Apple touch 180, favicons, and background and foreground layers in `assets/icon-layers/` for Xcode Icon Composer. `python3 tools/build-icons.py c` switches the app icon to the symbol if a store test says so.
+Tried three directions: Donnie peeking over a wall, a navy bond-and-line symbol, and a Donnie close-up. None looked like the game. Research says that when the icon does not match what the game is, players resist installing it ([Applied Sciences, 2021](https://mdpi.com/2076-3417/11/21/9911)), and that the icon should share the game's art style and hint at the core gameplay ([Supersonic](https://supersonic.com/learn/blog/5-design-tips-for-hyper-casual-icons-to-improve-your-app-store-cvr/), [Game Developer](https://www.gamedeveloper.com/production/picking-the-perfect-app-icon)).
+
+- [x] **Final icon: the game's core moment, drawn with the game's own painter.** Sky and grass, the wall in running bond between the two posts, the yellow line pulled tight with its line blocks, the last seat outlined in gold, and a brick coming down with the green snap outline the game shows when a drag lands.
+- [x] Favicon: the same scene cut down to bricks in bond, the yellow line, sky and grass. Reads at 16 px.
+- [x] `tools/icon.html` draws everything with the same palette and brick painting as `js/app.js`. Modes: `app`, `bg`, `fg` (Icon Composer layers), `fav`. Open it in a browser to export PNGs.
+- [x] Outputs: 1024 App Store master (opaque, square corners), PWA 192 and 512, Apple touch 180, favicon SVG + 32 + 48 PNG, background and foreground layers in `assets/icon-layers/`.
 
 ### Next ideas
 - Daily wall with a shared seed.

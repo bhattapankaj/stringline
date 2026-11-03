@@ -1,4 +1,4 @@
-const CACHE = "stringline-v24";
+const CACHE = "stringline-v25";
 const ASSETS = [
   "./",
   "./index.html",
