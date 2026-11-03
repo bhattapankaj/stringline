@@ -27,3 +27,7 @@ node tools/build-levels.js
 It lays out every wall, builds the rack, and checks that each level can be finished.
 
 Design notes and research are in [DESIGN.md](DESIGN.md).
+
+## Credits
+
+Sound effects and jingles by [Kenney](https://kenney.nl) (CC0).

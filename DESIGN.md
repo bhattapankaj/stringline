@@ -163,6 +163,35 @@ Tried three directions: Donnie peeking over a wall, a navy bond-and-line symbol,
 - [x] `tools/icon.html` draws everything with the same palette and brick painting as `js/app.js`. Modes: `app`, `bg`, `fg` (Icon Composer layers), `fav`. Open it in a browser to export PNGs.
 - [x] Outputs: 1024 App Store master (opaque, square corners), PWA 192 and 512, Apple touch 180, favicon SVG + 32 + 48 PNG, background and foreground layers in `assets/icon-layers/`.
 
+### Sprint 8. Sound and haptics
+Sounds are from Kenney's CC0 packs (Interface Sounds, Impact Sounds, Music Jingles): free for commercial use, no attribution required. Each file is trimmed to start instantly, normalized, and stored as a small mono WAV in `assets/sfx` (about 440 KB total). Jingles were picked by measuring their melody: rising for a win, falling for stuck.
+
+| Moment | Sound | Vibration (Android) |
+|---|---|---|
+| Any button | short blip (`tap`) | 8 ms |
+| Back | soft low blip (`back`) | 8 ms |
+| Settings toggle | `toggle` | 10 ms |
+| Pick up a brick | light pluck (`pickup`) | 6 ms |
+| Brick snaps to a seat while dragging | tiny tick (`snap`) | 4 ms |
+| Brick laid | knock plus concrete grit, pitch varies each time (`lay` + `grit`) | 14 ms |
+| Drop off the wall, brick returns | quiet `back` | 6 ms |
+| Course finished | stringline twang (plucked string synth) + chime (`course`) | 12, 50, 24 |
+| Wrong move | low bonk (`wrong`) | 28, 40, 28 |
+| Locked level | `locked` + node shake | 20, 30, 20 |
+| Hint | glass ding (`hint`) | 10, 30, 10 |
+| Park in Hold | `hold` | 12 ms |
+| Undo | reverse swoosh (`undo`) | 10 ms |
+| Restart | `restart` | 12 ms |
+| Win | rising pizzicato jingle (`win`), plus a star ding for each star at rising pitch | 20, 60, 20, 60, 60 |
+| Three stars or last wall | bigger rising steel jingle (`win-big`) | longer pattern |
+| Stuck | falling pizzicato jingle (`stuck`) | 40, 60, 40 |
+| Tap Donnie's head | spring boing synth that wobbles like the head + `bong` | 10, 30, 10, 30, 10 |
+
+iPhone specifics
+- Safari has no Vibration API. iOS fires its own haptic when a `<input type="checkbox" switch>` is toggled through a real tap on its label, so every tappable element gets a clear label over it (`js/haptics.js`, same method as the `ios-haptics` library). On iOS 26.5 and later only real taps work, so drags have no haptic there. On older iOS a scripted tap works and every moment above vibrates.
+- Audio unlocks inside every gesture until it is running, and the context is rebuilt if a Home Screen app loses it.
+- `navigator.audioSession` lets sound play with the silent switch on. Settings has a toggle for this on iPhone.
+
 ### Next ideas
 - Daily wall with a shared seed.
 - Real brick and trowel sound recordings.

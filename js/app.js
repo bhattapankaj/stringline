@@ -36,7 +36,7 @@
   const save = loadSave();
 
   function loadSave() {
-    const base = { stars: {}, sfx: true, haptics: true, seenIntro: false };
+    const base = { stars: {}, sfx: true, haptics: true, silentOk: true, seenIntro: false };
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) return Object.assign(base, JSON.parse(raw));
@@ -72,8 +72,46 @@
     return CHAPTERS.find(function (c) { return id >= c.from && id <= c.to; }) || CHAPTERS[0];
   }
 
-  function buzz(ms) { if (save.haptics && navigator.vibrate) navigator.vibrate(ms); }
-  function sfx(name) { if (save.sfx && audio && audio[name]) audio[name](); }
+  /* ---------- Sound + haptics ---------- */
+
+  const haptics = NS.haptics;
+  // One table for every moment in the game: which sound, how loud, which vibration pattern.
+  const FX = {
+    tap: { s: "tap", g: 0.7, h: 8 },
+    back: { s: "back", g: 0.85, h: 8 },
+    putback: { s: "back", g: 0.45, rate: 0.85, h: 6 },
+    toggle: { s: "toggle", g: 0.8, h: 10 },
+    pickup: { s: "pickup", g: 0.55, h: 6 },
+    snap: { s: "snap", g: 0.35, h: 4 },
+    lay: { fn: "lay", h: 14 },
+    course: { s: "course", g: 0.65, twang: true, h: [12, 50, 24] },
+    wrong: { s: "wrong", g: 0.9, h: [28, 40, 28] },
+    locked: { s: "locked", g: 0.8, h: [20, 30, 20] },
+    hint: { s: "hint", g: 0.8, h: [10, 30, 10] },
+    hold: { s: "hold", g: 0.8, h: 12 },
+    undo: { s: "undo", g: 0.7, h: 10 },
+    restart: { s: "restart", g: 0.7, h: 12 },
+    win: { s: "win", g: 0.9, h: [20, 60, 20, 60, 60] },
+    winBig: { s: "win-big", g: 0.85, h: [20, 60, 20, 60, 20, 60, 90] },
+    stuck: { s: "stuck", g: 0.85, h: [40, 60, 40] },
+    donnie: { boing: true, h: [10, 30, 10, 30, 10] }
+  };
+
+  function fx(name, opts) {
+    const f = FX[name];
+    if (!f) return;
+    const o = opts || {};
+    if (save.sfx && audio) {
+      if (f.s) audio.play(f.s, { gain: f.g, rate: o.rate || f.rate });
+      if (f.fn) audio[f.fn]();
+      if (f.twang) audio.twang();
+      if (f.boing) {
+        audio.boing(o.power);
+        audio.play("bong", { gain: 0.3, rate: 1.5 });
+      }
+    }
+    if (f.h != null && haptics) haptics.pulse(f.h);
+  }
 
   /* ---------- Bobblehead ---------- */
 
@@ -522,12 +560,20 @@
         const lock = svgEl("svg", { viewBox: "0 0 24 24" });
         lock.appendChild(svgEl("use", { href: "#i-lock" }));
         btn.appendChild(lock);
+        btn.addEventListener("click", function () {
+          fx("locked");
+          btn.classList.remove("nope");
+          void btn.offsetWidth;
+          btn.classList.add("nope");
+          toast("Finish level " + (open) + " first");
+        });
       } else {
         const label = document.createElement("span");
         label.textContent = it.id;
         btn.appendChild(label);
-        btn.addEventListener("click", function () { sfx("tap"); startLevel(it.id - 1); });
+        btn.addEventListener("click", function () { fx("tap"); startLevel(it.id - 1); });
       }
+      if (haptics) haptics.attach(btn);
       box.appendChild(btn);
       if (state === "done") {
         const row = document.createElement("div");
@@ -1001,15 +1047,14 @@
     coach = null;
     seatsUntil = 0;
     selected = "queue";
-    sfx("lay");
-    buzz(12);
+    fx("lay");
     coachBob.nod();
     shake = 3;
     dust(rec);
     const lowAfter = engine.lineRow();
     if (lowAfter > lowBefore) {
       twang = 1;
-      sfx("twang");
+      fx("course");
       coachBob.boing(0.7);
       if (engine.status !== "won") {
         const p = cellXY(lowBefore, 0);
@@ -1034,8 +1079,7 @@
 
   function deny(reason) {
     coachBob.shake();
-    sfx("deny");
-    buzz(30);
+    fx("wrong");
     say(WHY[reason] || "That brick will not sit there.");
     seatsUntil = clock + 2.2;
   }
@@ -1071,9 +1115,9 @@
     const from = slot.dataset.from;
     drag = null;
     pressed = { from: from, x: e.clientX, y: e.clientY, id: e.pointerId, slot: slot, moved: false };
-    slot.setPointerCapture(e.pointerId);
   }
   let pressed = null;
+  let lastSeat = "";
 
   function onSlotMove(e) {
     if (!pressed || e.pointerId !== pressed.id) return;
@@ -1091,7 +1135,9 @@
       const lifted = pressed.slot.querySelector(".brick");
       if (lifted) lifted.classList.add("lifted");
       coach = coach && coach.free ? coach : null;
-      sfx("tap");
+      try { pressed.slot.setPointerCapture(pressed.id); } catch (err) {}
+      lastSeat = "";
+      fx("pickup");
     }
     if (drag) moveDrag(e.clientX, e.clientY);
   }
@@ -1113,7 +1159,11 @@
       const c = Math.round(colF);
       const r = engine.rows - drag.brick.h - Math.round(rowTop);
       const seat = nearestSeat(drag.brick, r, c, 1.7);
-      if (seat) ghost = { r: seat.r, c: seat.c, w: drag.brick.w, h: drag.brick.h, ok: true };
+      if (seat) {
+        ghost = { r: seat.r, c: seat.c, w: drag.brick.w, h: drag.brick.h, ok: true };
+        const key = seat.r + ":" + seat.c;
+        if (key !== lastSeat) { lastSeat = key; fx("snap"); }
+      }
       else {
         const cc = Math.max(0, Math.min(engine.cols - drag.brick.w, c));
         const rr = Math.max(0, Math.min(engine.rows - drag.brick.h, r));
@@ -1136,12 +1186,12 @@
     if (!drag) {
       // A tap on a slot
       if (p.from === "hold") {
-        if (engine.hold) { selected = "hold"; seatsUntil = clock + 2.2; sfx("tap"); }
-        else if (engine.canStash()) { engine.stash(); sfx("hold"); say("Parked in Hold. Use it when it fits."); coach = null; afterMove(); }
+        if (engine.hold) { selected = "hold"; seatsUntil = clock + 2.2; fx("tap"); }
+        else if (engine.canStash()) { engine.stash(); fx("hold"); say("Parked in Hold. Use it when it fits."); coach = null; afterMove(); }
       } else if (engine.next()) {
         selected = "queue";
         seatsUntil = clock + 2.2;
-        sfx("tap");
+        fx("tap");
       }
       refreshUI();
       return;
@@ -1154,7 +1204,7 @@
       done = doPlace(d.from, ghost.r, ghost.c);
     } else if (d.overHold && d.from === "queue" && engine.canStash()) {
       engine.stash();
-      sfx("hold");
+      fx("hold");
       say("Parked in Hold. Use it when it fits.");
       coach = null;
       refreshUI();
@@ -1162,6 +1212,8 @@
       done = true;
     } else if (ghost && !ghost.ok) {
       deny(ghost.why);
+    } else {
+      fx("putback");
     }
     ghost = null;
     if (done) {
@@ -1240,7 +1292,7 @@
     engine.hints += 1;
     coachBob.nod();
     renderMeter();
-    sfx("tap");
+    fx("hint");
     const res = engine.solve(150000);
     if (res.ok && res.first) {
       const m = res.first;
@@ -1290,8 +1342,9 @@
     const prev = save.stars[lv.id] || 0;
     save.stars[lv.id] = Math.max(prev, stars);
     persist();
-    sfx("win");
-    buzz(30);
+    const lastLevel = levelIndex >= LEVELS.length - 1;
+    fx(stars === 3 || lastLevel ? "winBig" : "win");
+    if (save.sfx && audio) audio.stars(stars);
     $("sheet-ribbon").textContent = "Wall Done";
     $("sheet-ribbon").className = "ribbon";
     const box = $("sheet-stars");
@@ -1303,7 +1356,7 @@
     if (engine.hints) slips.push(plural(engine.hints, "hint"));
     $("sheet-text").textContent = slips.length ? slips.join(", ") + ". Try it clean for three stars." : "No undos. No hints.";
     const last = levelIndex >= LEVELS.length - 1;
-    $("sheet-primary").textContent = last ? "Back to map" : "Next level";
+    $("sheet-primary-text").textContent = last ? "Back to map" : "Next level";
     $("sheet-primary").dataset.act = last ? "map" : "next";
     $("sheet-retry").querySelector("span").textContent = "Replay";
     $("sheet").hidden = false;
@@ -1311,13 +1364,13 @@
 
   function stuckSheet() {
     coachBob.shake();
-    sfx("fail");
+    fx("stuck");
     $("sheet-ribbon").textContent = "Stuck";
     $("sheet-ribbon").className = "ribbon stuck";
     $("sheet-stars").innerHTML = "";
     $("sheet-title").textContent = "No seat left";
     $("sheet-text").textContent = "None of your bricks fit anywhere. Undo a move or start the wall again.";
-    $("sheet-primary").textContent = "Undo";
+    $("sheet-primary-text").textContent = "Undo";
     $("sheet-primary").dataset.act = "undo";
     $("sheet-retry").querySelector("span").textContent = "Restart";
     $("sheet").hidden = false;
@@ -1330,7 +1383,7 @@
     ghost = null;
     $("sheet").hidden = true;
     clearTimeout(sheetTimer);
-    sfx("hold");
+    fx("undo");
     say("Pulled it. Set it true.");
     refreshUI();
   }
@@ -1362,39 +1415,44 @@
   /* ---------- Bind ---------- */
 
   function bind() {
-    let unlockedAudio = false;
-    document.addEventListener("pointerdown", function () {
-      if (!unlockedAudio && audio) { audio.unlock(); unlockedAudio = true; }
-    }, { capture: true });
+    // iPhone only starts audio inside a real gesture, and can drop it later. Check on every one.
+    ["pointerdown", "touchend", "click", "keydown"].forEach(function (type) {
+      document.addEventListener(type, function () { if (audio) audio.unlock(); }, { capture: true, passive: true });
+    });
+    if (audio) audio.setSilentOk(save.silentOk !== false);
+    if (haptics) {
+      haptics.setEnabled(save.haptics);
+      document.querySelectorAll(".btn, .round-btn, #home-donnie, .coach-donnie, .slot.hold, .slot.next, #stage, #home-progress").forEach(haptics.attach);
+    }
 
     $("btn-play").addEventListener("click", function () {
-      sfx("tap");
+      fx("tap");
       const open = unlocked();
       if (doneCount() >= LEVELS.length) show("map");
       else startLevel(open - 1);
     });
-    $("home-progress").addEventListener("click", function () { sfx("tap"); show("map"); });
-    $("home-donnie").addEventListener("click", function () { homeBob.boing(1.3); sfx("tap"); buzz(10); });
-    $("coach-bob").parentElement.addEventListener("click", function () { coachBob.boing(1); });
-    $("btn-how").addEventListener("click", function () { sfx("tap"); show("how"); });
-    $("btn-settings").addEventListener("click", function () { sfx("tap"); show("settings"); });
+    $("home-progress").addEventListener("click", function () { fx("tap"); show("map"); });
+    $("home-donnie").addEventListener("click", function () { homeBob.boing(1.3); fx("donnie", { power: 1.3 }); });
+    $("coach-bob").parentElement.addEventListener("click", function () { coachBob.boing(1); fx("donnie", { power: 1 }); });
+    $("btn-how").addEventListener("click", function () { fx("tap"); show("how"); });
+    $("btn-settings").addEventListener("click", function () { fx("tap"); show("settings"); });
     document.querySelectorAll("[data-back]").forEach(function (btn) {
-      btn.addEventListener("click", function () { sfx("tap"); show(btn.dataset.back); });
+      btn.addEventListener("click", function () { fx("back"); show(btn.dataset.back); });
     });
-    $("btn-map-back").addEventListener("click", function () { sfx("tap"); show("map"); });
+    $("btn-map-back").addEventListener("click", function () { fx("back"); show("map"); });
     $("btn-hint").addEventListener("click", hint);
     $("btn-undo").addEventListener("click", undo);
-    $("btn-retry").addEventListener("click", function () { sfx("tap"); startLevel(levelIndex); });
+    $("btn-retry").addEventListener("click", function () { fx("restart"); startLevel(levelIndex); });
 
     $("sheet-primary").addEventListener("click", function (e) {
       const act = e.currentTarget.dataset.act;
-      sfx("tap");
+      if (act !== "undo") fx("tap");
       if (act === "next") startLevel(levelIndex + 1);
       else if (act === "undo") undo();
       else show("map");
     });
-    $("sheet-retry").addEventListener("click", function () { sfx("tap"); startLevel(levelIndex); });
-    $("sheet-map").addEventListener("click", function () { sfx("tap"); $("sheet").hidden = true; show("map"); });
+    $("sheet-retry").addEventListener("click", function () { fx("restart"); startLevel(levelIndex); });
+    $("sheet-map").addEventListener("click", function () { fx("tap"); $("sheet").hidden = true; show("map"); });
 
     ["slot-hold", "slot-next"].forEach(function (id) {
       const s = $(id);
@@ -1406,15 +1464,32 @@
       });
     });
 
-    const cv = $("wall");
-    cv.addEventListener("pointerdown", onWallDown);
-    cv.addEventListener("pointerup", onWallUp);
+    // Listen on the stage so taps that land on the haptic overlay still place bricks.
+    const stage = $("stage");
+    stage.addEventListener("pointerdown", onWallDown);
+    stage.addEventListener("pointerup", onWallUp);
 
     $("set-sfx").checked = save.sfx;
     $("set-haptics").checked = save.haptics;
-    $("set-sfx").addEventListener("change", function () { save.sfx = $("set-sfx").checked; persist(); });
-    $("set-haptics").addEventListener("change", function () { save.haptics = $("set-haptics").checked; persist(); if (save.haptics) buzz(15); });
+    $("set-sfx").addEventListener("change", function () { save.sfx = $("set-sfx").checked; persist(); fx("toggle"); });
+    $("set-haptics").addEventListener("change", function () {
+      save.haptics = $("set-haptics").checked;
+      persist();
+      if (haptics) haptics.setEnabled(save.haptics);
+      fx("toggle");
+    });
+    if (audio && audio.hasSessionApi()) {
+      $("row-silent").hidden = false;
+      $("set-silent").checked = save.silentOk !== false;
+      $("set-silent").addEventListener("change", function () {
+        save.silentOk = $("set-silent").checked;
+        persist();
+        audio.setSilentOk(save.silentOk);
+        fx("toggle");
+      });
+    }
     $("btn-reset").addEventListener("click", function () {
+      fx("tap");
       if (confirm("Clear all stars and progress on this device?")) {
         save.stars = {};
         save.seenIntro = false;
@@ -1431,7 +1506,10 @@
       scene.w = 0;
       if (view === "map") renderMap();
     });
-    document.addEventListener("visibilitychange", function () { if (!document.hidden) kick(); });
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) { if (audio) audio.suspend(); }
+      else kick();
+    });
   }
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {

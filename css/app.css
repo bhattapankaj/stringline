@@ -508,7 +508,7 @@ h1, h2, h3, p { margin: 0; }
 .meter svg { width: 16px; height: 16px; fill: var(--line); stroke: var(--ink); stroke-width: 1.8; transition: fill 0.2s; }
 .meter svg.off { fill: var(--mortar-dk); }
 
-.stage { position: relative; flex: 1; min-height: 0; margin: 0 calc(-1 * var(--s4)); }
+.stage { position: relative; flex: 1; min-height: 0; margin: 0 calc(-1 * var(--s4)); touch-action: none; }
 
 .stage-pill {
   position: absolute;
@@ -933,4 +933,27 @@ h1, h2, h3, p { margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------- Haptic overlay (iPhone) ---------- */
+/* A clear label over tappable things. Tapping it flips a hidden switch, which makes iOS fire a haptic. */
+.haptic-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.slot > .haptic-hit,
+#stage > .haptic-hit { touch-action: none; }
+.row[hidden] { display: none; }
+
+.node.locked.nope { animation: nope 0.35s ease-in-out; }
+@keyframes nope {
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
 }

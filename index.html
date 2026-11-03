@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="./assets/img/apple-touch-icon.png">
   <link rel="preload" href="./assets/fonts/LilitaOne.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./assets/fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="./css/app.css?v=21">
+  <link rel="stylesheet" href="./css/app.css?v=22">
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -136,7 +136,7 @@
           <div class="big-stars" id="sheet-stars"></div>
           <h3 class="panel-title" id="sheet-title">On the line</h3>
           <p class="panel-text" id="sheet-text">No undos. No hints.</p>
-          <button type="button" class="btn btn-go btn-lg" id="sheet-primary">Next level</button>
+          <button type="button" class="btn btn-go btn-lg" id="sheet-primary"><span id="sheet-primary-text">Next level</span></button>
           <div class="panel-row">
             <button type="button" class="btn btn-steel btn-md" id="sheet-retry"><svg><use href="#i-restart"/></svg><span>Replay</span></button>
             <button type="button" class="btn btn-steel btn-md" id="sheet-map"><svg><use href="#i-map"/></svg><span>Map</span></button>
@@ -229,11 +229,15 @@
         <div class="list">
           <label class="row">
             <span>Sound</span>
-            <span class="toggle"><input type="checkbox" id="set-sfx" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
+            <span class="toggle"><input type="checkbox" switch id="set-sfx" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
           </label>
           <label class="row">
             <span>Vibration</span>
-            <span class="toggle"><input type="checkbox" id="set-haptics" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
+            <span class="toggle"><input type="checkbox" switch id="set-haptics" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
+          </label>
+          <label class="row" id="row-silent" hidden>
+            <span>Sound with silent switch on</span>
+            <span class="toggle"><input type="checkbox" switch id="set-silent" checked><span class="track" aria-hidden="true"><span class="knob"></span></span></span>
           </label>
         </div>
         <p class="fine">Progress is saved on this device. To play full screen on iPhone, tap Share, then Add to Home Screen.</p>
@@ -245,9 +249,10 @@
     <div id="toast" aria-live="polite"></div>
   </div>
 
-  <script src="./js/levels.js?v=21"></script>
-  <script src="./js/audio.js?v=21"></script>
-  <script src="./js/engine.js?v=21"></script>
-  <script src="./js/app.js?v=21"></script>
+  <script src="./js/levels.js?v=22"></script>
+  <script src="./js/audio.js?v=22"></script>
+  <script src="./js/haptics.js?v=22"></script>
+  <script src="./js/engine.js?v=22"></script>
+  <script src="./js/app.js?v=22"></script>
 </body>
 </html>
